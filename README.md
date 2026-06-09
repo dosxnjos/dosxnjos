@@ -29,6 +29,6 @@ skills = {
 
 <br>
 
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=dosxnjos&show_icons=true&theme=transparent&hide_border=true&title_color=6366f1&icon_color=818cf8&text_color=94a3b8&bg_color=00000000)
+![GitHub Stats](https://github-readme-stats.vercel.app/api?username=dosxnjos&show_icons=true&hide_border=true&title_color=6366f1&icon_color=818cf8&text_color=94a3b8&bg_color=00000000&cache_seconds=3600)
 
 </div>
