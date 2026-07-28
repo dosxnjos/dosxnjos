@@ -16,9 +16,18 @@ sem depender de intermediários.
 skills = {
     "dados":   ["Python", "SQL", "DuckDB", "Power BI", "DAX", "Pandas"],
     "produto": ["Discovery", "OKRs", "Impact × Effort", "Analytics"],
-    "dev":     ["React", "Node.js", "GitHub Actions", "PowerShell"],
+    "dev":     ["React", "Node.js", "GitHub Actions", "PowerShell", "Playwright", "Tauri", "Whisper"],
 }
 ```
+
+---
+
+**Projetos em destaque**
+
+- 🌊 [`fluid-cursor-trail`](https://github.com/dosxnjos/fluid-cursor-trail) — rastro de cursor com simulação de fluido WebGL, bancadas de calibração ao vivo
+- 🎙️ [`reco`](https://github.com/dosxnjos/reco) — gravador Windows (mic + áudio do sistema) com transcrição 100% local
+- 📊 [`claude-usage-tray`](https://github.com/dosxnjos/claude-usage-tray) — bandeja do Windows com uso das contas Claude no hover
+- 🎭 [`playwright`](https://github.com/dosxnjos/playwright) (fork) — extensão Chrome com múltiplas conexões MCP simultâneas
 
 ---
 
