@@ -12,12 +12,19 @@ Dado sem decisão é ruído. Construo pipelines, dashboards e automações
 que encurtam a distância entre o dado bruto e a ação estratégica —
 sem depender de intermediários.
 
-<!-- Números de entrega, contados à mão em 12/11/2026: PRs juntados (merged) de 01/01/2026 até essa data em todos
-os repositórios privados da organização onde trabalho, pela API de busca do GitHub com a conta de lá. Ficam fora os
-PRs abertos por robô (user.type = Bot: dependências, agente automático, rotinas de dados) e os de repositório de
-ensaio; só contam os PRs abertos pelas minhas contas. Recontar:
-python tools/contar_entregas.py <org> 2026 --excluir <repos-de-ensaio> --autores <minhas-contas> -->
-**Em 2026:** 484 entregas no ar em sistemas internos de um grupo de varejo (repositórios privados).
+<!-- Números de entrega, contados à mão em 13/11/2026: PRs juntados (merged) em 2026 em todos os repositórios
+privados da organização onde trabalho, pela API do GitHub com a conta de lá, cada um classificado pela origem
+(regra no topo de tools/contar_entregas.py). "Dirigi" = PR aberto por mim numa conversa com agentes, ou feito pelo
+agente a partir de uma issue que eu abri (ou de fase que o agente abriu dela). "Consertos" = a origem é um erro,
+um alerta ou uma falha repetida que virou issue sem ninguém pedir. "Rotinas" = dependências, changelog e
+atualização de dados. Repositórios de ensaio ficam fora. Recontar:
+python tools/contar_entregas.py <org> 2026 --excluir <ensaio> --autores <minhas-contas> --agentes <app-do-agente> -->
+**Em 2026, em sistemas internos de um grupo de varejo** (repositórios privados, contados em PRs juntados):
+
+- **1.013 entregas que eu dirigi:** 467 em conversa com agentes de IA no meu notebook e 546 feitas por agentes no
+  GitHub a partir de demandas que eu abri
+- **104 consertos que os agentes fizeram sozinhos**, a partir de erros, alertas e falhas repetidas
+- **299 rotinas automáticas:** atualização de dependências, changelog e dados
 
 ```python
 skills = {
