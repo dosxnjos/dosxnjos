@@ -12,19 +12,27 @@ Dado sem decisão é ruído. Construo pipelines, dashboards e automações
 que encurtam a distância entre o dado bruto e a ação estratégica —
 sem depender de intermediários.
 
-<!-- Números de entrega, contados à mão em 13/11/2026: PRs juntados (merged) em 2026 em todos os repositórios
-privados da organização onde trabalho, pela API do GitHub com a conta de lá, cada um classificado pela origem
-(regra no topo de tools/contar_entregas.py). "Dirigi" = PR aberto por mim numa conversa com agentes, ou feito pelo
-agente a partir de uma issue que eu abri (ou de fase que o agente abriu dela). "Consertos" = a origem é um erro,
-um alerta ou uma falha repetida que virou issue sem ninguém pedir. "Rotinas" = dependências, changelog e
-atualização de dados. Repositórios de ensaio ficam fora. Recontar:
-python tools/contar_entregas.py <org> 2026 --excluir <ensaio> --autores <minhas-contas> --agentes <app-do-agente> -->
-**Em 2026, em sistemas internos de um grupo de varejo** (repositórios privados, contados em PRs juntados):
+<!-- Números de entrega, contados à mão em 13/11/2026 em todos os repositórios privados da organização onde
+trabalho, pela API do GitHub e pelo git, com a conta de lá; cada entrega classificada pela origem (regra no topo de
+tools/contar_entregas.py). Entrega = PR juntado; antes de o trabalho entrar por PR (até setembro), um lote de
+commits diretos do mesmo repositório, dia e tipo, ou um card do meu quadro de demandas. "Dirigi" = conversa aberta
+com agentes, executor que meu quadro abriu sozinho, ou agente no GitHub a partir de uma issue minha. "Consertos" =
+a origem é um erro, alerta ou falha repetida que virou issue sem ninguém pedir. "Rotinas" = dependências,
+changelog e dados. Repositórios de ensaio e de anotações ficam fora. Recontar:
+python tools/contar_entregas.py <org> --autores <contas> --emails <emails> --agentes <app> --excluir <repos> -->
+**Desde que comecei, em junho de 2026, em sistemas internos de um grupo de varejo** (repositórios privados):
 
-- **1.013 entregas que eu dirigi:** 467 em conversa com agentes de IA no meu notebook e 546 feitas por agentes no
-  GitHub a partir de demandas que eu abri
+- **1.453 entregas que eu dirigi**
 - **104 consertos que os agentes fizeram sozinhos**, a partir de erros, alertas e falhas repetidas
-- **299 rotinas automáticas:** atualização de dependências, changelog e dados
+- **360 rotinas automáticas:** dependências, changelog e dados
+
+| 2026 | jun | jul | ago | set | out | nov |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dirigidas | 36 | 62 | 63 | 152 | 687 | 453 |
+| consertos sozinhos | – | – | – | – | 53 | 51 |
+| rotinas | 1 | 21 | 21 | 7 | 124 | 186 |
+
+<sub>Até setembro, lotes de commits diretos; de outubro em diante, PRs (a unidade ficou menor, por isso o salto).</sub>
 
 ```python
 skills = {

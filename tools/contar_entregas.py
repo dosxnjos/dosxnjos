@@ -1,34 +1,44 @@
-"""Conta os PRs juntados (merged) num ano numa organização do GitHub, por categoria de origem.
+"""Conta as entregas numa organização do GitHub por categoria de origem, por mês, por ano e desde o início.
 
 Uso:
-    python tools/contar_entregas.py <org> [ano] --autores <minhas,contas> [--agentes <apps>]
-        [--excluir <repos>] [--meu-nome <nome>] [--json]
+    python tools/contar_entregas.py <org> --autores <minhas,contas> --emails <meus,emails>
+        [--agentes <apps>] [--excluir <repos>] [--meu-nome <nome>] [--inicio-central AAAA-MM-DD]
+        [--sem-commits] [--json]
 
-Precisa do `gh` logado numa conta com acesso aos repositórios privados da organização. A contagem é manual:
-nenhuma credencial da organização entra neste repositório.
+Precisa do `gh` logado numa conta com acesso aos repositórios privados da organização, e do `git`. A contagem é
+manual: nenhuma credencial da organização entra neste repositório.
+
+Unidade de entrega:
+  - PR juntado (merged), a partir de quando o trabalho passou a entrar por PR;
+  - antes disso (e em repo que ainda commita direto), um "lote": os commits diretos na branch padrão do mesmo
+    repo, no mesmo dia e da mesma categoria; na categoria `central`, um lote por card. Commit que o GitHub gravou
+    ao juntar um PR (committer noreply@github.com) já conta como PR e sai daqui.
 
 Categorias (a primeira regra que casar vence):
-  fora        repositório em --excluir (ensaio)
-  manutencao  atualização de dependência (dependabot/renovate) ou CHANGELOG regenerado por robô
-  dados       rotina de dados (rótulo `dados` ou ramo `dados/`)
+  fora        repositório em --excluir (ensaio, anotações)
+  manutencao  dependência (dependabot/renovate) ou CHANGELOG regenerado por robô
+  dados       rotina de dados (rótulo `dados`, ramo `dados/`, ou commit direto de robô)
   conserto    a cadeia de origem tem issue automática: rótulo `erro-automatico`/`zelador`, aberta por robô que não
               é o agente, ou título de alerta (`main vermelha`, `Alerta:`, `Trava:`, `Teste instável`,
-              `Publicação parou`, `Erro automático`); subdividido em `trava` (zelador) e `erro` (o resto)
+              `Publicação parou`, `Erro automático`); detalhe `trava` (zelador) ou `erro`
   pedido      a cadeia tem `pedido de: <pessoa>` de outra pessoa, ou a issue raiz é de outra conta humana
   agente      dirigida por mim, feita pelo agente do GitHub a partir de uma issue
-  conversa    dirigida por mim, sem issue: PR aberto pelas minhas contas ou pelo agente numa sessão minha
+  central     dirigida por mim, feita por executor aberto por IA: id de card (`c`/`i` + 12 hex) no ramo, no
+              título ou na mensagem do commit (a partir de --inicio-central)
+  conversa    dirigida por mim, numa conversa aberta: o resto do que saiu das minhas contas
   sem         o resto
 Cadeia de origem: issues ligadas ao PR, o número do ramo `claude/issue-<n>`/`claude/arquitetura-<n>` e, de cada
 issue, a linha `Origem: #<n>` (ou o rodapé `aberta pelo arquiteto ..., issue #<n>`), até 5 saltos.
-A busca do GitHub devolve no máximo 1.000 itens por consulta: a coleta é fatiada por mês e conferida.
 """
 import argparse
-import calendar
 import collections
+import datetime
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 
 CONSULTA_PRS = """query($q: String!, $cur: String) { search(query: $q, type: ISSUE, first: 50, after: $cur) {
   issueCount pageInfo { hasNextPage endCursor }
@@ -38,7 +48,15 @@ CONSULTA_PRS = """query($q: String!, $cur: String) { search(query: $q, type: ISS
 ORIGEM = re.compile(r"(?im)^\s*-?\s*Origem:\s*(?:([\w.-]+/[\w.-]+))?#(\d+)|aberta pelo arquiteto[^\n]*issue #(\d+)")
 TITULO_AUTO = re.compile(r"(?i)^(main vermelha|alerta:|trava:|teste instável|publicação parou|erro automático)")
 PEDIDO = re.compile(r"(?im)^\s*\**pedido de:\**\s*([a-zà-ú]+)")
+CARD = re.compile(r"\b([ci][0-9a-f]{12})\b|\bcard[ `]+([a-z][\w-]*\d[\w-]*)")
 ROBOS_MANUTENCAO = {"dependabot", "renovate"}
+ORDEM = ("conversa", "central", "agente", "pedido", "conserto", "manutencao", "dados", "fora", "sem")
+DIRIGIDAS = ("conversa", "central", "agente")
+FUSO = datetime.timezone(datetime.timedelta(hours=-3))
+
+
+def rodar(cmd, **kw):
+    return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", **kw)
 
 
 def gh_graphql(consulta, parcial=False, **variaveis):
@@ -47,7 +65,7 @@ def gh_graphql(consulta, parcial=False, **variaveis):
     for k, v in variaveis.items():
         if v is not None:
             cmd += ["-f", f"{k}={v}"]
-    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    r = rodar(cmd)
     try:
         dados = json.loads(r.stdout or "{}").get("data")
     except json.JSONDecodeError:
@@ -57,11 +75,18 @@ def gh_graphql(consulta, parcial=False, **variaveis):
     return dados
 
 
-def coletar_prs(org, ano):
+def meses(inicio, fim):
+    a, m = inicio
+    while (a, m) <= fim:
+        yield a, m
+        a, m = (a + 1, 1) if m == 12 else (a, m + 1)
+
+
+def coletar_prs(org, inicio, fim):
     prs = []
-    for mes in range(1, 13):
-        fim = calendar.monthrange(ano, mes)[1]
-        q = f"org:{org} is:pr is:merged merged:{ano}-{mes:02d}-01..{ano}-{mes:02d}-{fim:02d}"
+    for ano, mes in meses(inicio, fim):
+        ult = (datetime.date(ano + (mes == 12), mes % 12 + 1, 1) - datetime.timedelta(days=1)).day
+        q = f"org:{org} is:pr is:merged merged:{ano}-{mes:02d}-01..{ano}-{mes:02d}-{ult:02d}"
         cur, do_mes = None, []
         while True:
             s = gh_graphql(CONSULTA_PRS, q=q, cur=cur)["search"]
@@ -70,7 +95,7 @@ def coletar_prs(org, ano):
                 break
             cur = s["pageInfo"]["endCursor"]
         if s["issueCount"] >= 1000 or len(do_mes) != s["issueCount"]:
-            sys.exit(f"mês {mes:02d}: a busca trouxe {len(do_mes)} de {s['issueCount']}; fatie mais fino")
+            sys.exit(f"{ano}-{mes:02d}: a busca trouxe {len(do_mes)} de {s['issueCount']}; fatie mais fino")
         prs += do_mes
     return prs
 
@@ -115,13 +140,18 @@ def chaves_do_pr(p):
     return list(dict.fromkeys(ks + ([f"{repo}#{m.group(1)}"] if m else [])))
 
 
-def classificar(p, cache, a):
+def card(texto, dia, a):
+    m = CARD.search(texto)
+    return (m.group(1) or m.group(2)) if m and (not a.inicio_central or dia >= a.inicio_central) else ""
+
+
+def classificar_pr(p, cache, a, dia):
     """(categoria, detalhe)."""
     rotulos = {x["name"] for x in p["labels"]["nodes"]}
     autor = (p["author"] or {}).get("login", "").lower()
     ramo, titulo = p["headRefName"], p["title"]
     if p["repository"]["name"].lower() in a.excluir:
-        return "fora", "ensaio"
+        return "fora", "excluído"
     if autor in ROBOS_MANUTENCAO or rotulos & {"dependencias", "dependencies"}:
         return "manutencao", "dependência"
     if ramo.startswith("bot/changelog") or titulo.startswith("CHANGELOG.md regenerado"):
@@ -149,29 +179,76 @@ def classificar(p, cache, a):
     if ks:
         return "agente", "issue"
     if autor in a.autores or autor in a.agentes:
-        return "conversa", "conta" if autor in a.autores else "credencial do agente"
+        c = card(f"{ramo} {titulo}", dia, a)
+        return ("central", c) if c else ("conversa", "conta" if autor in a.autores else "credencial do agente")
     return "sem", autor
 
 
+def lotes_diretos(org, repos, a):
+    """Commits diretos na branch padrão, agrupados em lotes: [(mês, categoria, detalhe)]."""
+    sep, lotes = "\x1f", set()
+    with tempfile.TemporaryDirectory(prefix="entregas-") as base:
+        for repo in repos:
+            d = os.path.join(base, repo)
+            r = rodar(["git", "clone", "-q", "--bare", "--filter=blob:none", f"https://github.com/{org}/{repo}.git", d])
+            if r.returncode != 0:
+                sys.exit(f"git clone de {repo} falhou: {r.stderr.strip()[:200]}")
+            r = rodar(["git", "-C", d, "log", "HEAD", "--first-parent", "--no-merges", "--date=format-local:%Y-%m-%d",
+                       f"--format=%ae{sep}%ce{sep}%ad{sep}%s{sep}%b%x1e"], env=dict(os.environ, TZ="America/Sao_Paulo"))
+            for reg in r.stdout.split("\x1e"):
+                campos = (reg.strip("\n").split(sep) + [""] * 5)[:5]
+                ae, ce, dia, assunto, corpo = campos[0].lower(), campos[1].lower(), campos[2], campos[3], campos[4]
+                if not dia or ce == "noreply@github.com" or repo.lower() in a.excluir:
+                    continue   # vazio, PR juntado pelo GitHub (já contado) ou repo fora
+                if "[bot]" in ae + ce or ae.endswith("@users.noreply.github.com"):
+                    cat = "manutencao" if re.search(r"(?i)changelog|depend", assunto) else "dados"
+                    lotes.add((repo, dia, cat, ""))
+                elif ae in a.emails or ce in a.emails:
+                    c = card(f"{assunto}\n{corpo}", dia, a)
+                    lotes.add(("*", "", "central", c) if c else (repo, dia, "conversa", ""))   # card: um lote só
+                    if c:
+                        lotes.add(("__card_dia", c, dia, ""))
+                else:
+                    lotes.add((repo, dia, "sem", ""))
+    primeiro_dia = {}
+    for x in lotes:
+        if x[0] == "__card_dia":
+            primeiro_dia[x[1]] = min(primeiro_dia.get(x[1], x[2]), x[2])
+    saida = []
+    for repo, dia, cat, c in lotes:
+        if repo == "__card_dia":
+            continue
+        dia = primeiro_dia.get(c, dia) if cat == "central" else dia
+        saida.append((dia[:7], cat, "card" if cat == "central" else "lote"))
+    return saida
+
+
 def main(argv):
-    p = argparse.ArgumentParser(description="PRs juntados num ano numa organização, por categoria de origem.")
+    p = argparse.ArgumentParser(description="Entregas numa organização por categoria, mês, ano e desde o início.")
     p.add_argument("org")
-    p.add_argument("ano", nargs="?", type=int, default=2026)
-    p.add_argument("--autores", required=True, help="as minhas contas, separadas por vírgula")
+    p.add_argument("--autores", required=True, help="as minhas contas do GitHub, separadas por vírgula")
+    p.add_argument("--emails", default="", help="os meus e-mails de commit (para os commits diretos)")
     p.add_argument("--agentes", default="", help="logins dos Apps do agente (sem o sufixo [bot])")
-    p.add_argument("--excluir", default="", help="repositórios fora da conta (ensaio), separados por vírgula")
+    p.add_argument("--excluir", default="", help="repositórios fora da conta, separados por vírgula")
     p.add_argument("--meu-nome", default="gabriel", help="o meu nome na linha 'pedido de:'")
-    p.add_argument("--json", action="store_true", help="PR a PR, com a categoria")
+    p.add_argument("--inicio-central", default="", help="AAAA-MM-DD: id de card só conta a partir daqui")
+    p.add_argument("--sem-commits", action="store_true", help="só PRs (pula os commits diretos)")
+    p.add_argument("--json", action="store_true", help="série mensal e PR a PR, com a categoria")
     a = p.parse_args(argv)
     lista = lambda s: set(filter(None, s.lower().split(",")))   # noqa: E731
-    a.autores, a.agentes, a.excluir, a.meu_nome = lista(a.autores), lista(a.agentes), lista(a.excluir), a.meu_nome.lower()
+    a.autores, a.agentes, a.excluir, a.emails = lista(a.autores), lista(a.agentes), lista(a.excluir), lista(a.emails)
+    a.meu_nome = a.meu_nome.lower()
 
-    prs = coletar_prs(a.org, a.ano)
-    if not prs:
-        sys.exit("a busca não achou nenhum PR: o `gh` está na conta que enxerga os repositórios privados?")
-    sumidos = a.excluir - {x["repository"]["name"].lower() for x in prs}
+    r = rodar(["gh", "api", "--paginate", f"orgs/{a.org}/repos?per_page=100", "-q", ".[] | [.name, .created_at] | @tsv"])
+    repos = dict(line.split("\t") for line in r.stdout.splitlines() if "\t" in line)
+    if not repos:
+        sys.exit("não vi nenhum repositório: o `gh` está na conta que enxerga os repositórios privados?")
+    sumidos = a.excluir - {x.lower() for x in repos}
     if sumidos:
-        sys.exit(f"--excluir com repositório que não apareceu na busca: {', '.join(sorted(sumidos))}")
+        sys.exit(f"--excluir com repositório que não existe na organização: {', '.join(sorted(sumidos))}")
+    criado = min(repos.values())
+    hoje = datetime.datetime.now(FUSO)
+    prs = coletar_prs(a.org, (int(criado[:4]), int(criado[5:7])), (hoje.year, hoje.month))
     cache, fila = {}, [k for x in prs for k in chaves_do_pr(x)]
     for _ in range(6):
         coletar_issues(a.org, fila, cache)
@@ -179,18 +256,36 @@ def main(argv):
         if not fila:
             break
 
-    res = [(x, *classificar(x, cache, a)) for x in prs]
+    itens, por_pr = [], []
+    for x in prs:
+        juntado = datetime.datetime.fromisoformat(x["mergedAt"].replace("Z", "+00:00")).astimezone(FUSO)
+        c, d = classificar_pr(x, cache, a, juntado.strftime("%Y-%m-%d"))
+        itens.append((juntado.strftime("%Y-%m"), c, "pr"))
+        por_pr.append({"repo": x["repository"]["name"], "pr": x["number"], "juntado": x["mergedAt"],
+                       "categoria": c, "detalhe": d})
+    if not a.sem_commits:
+        itens += lotes_diretos(a.org, sorted(repos), a)
+
+    serie = collections.defaultdict(collections.Counter)
+    for mes, c, _ in itens:
+        serie[mes][c] += 1
+    unid = collections.Counter((c, u) for _, c, u in itens)
     if a.json:
-        json.dump([{"repo": x["repository"]["name"], "pr": x["number"], "juntado": x["mergedAt"], "categoria": c,
-                    "detalhe": d} for x, c, d in res], sys.stdout, ensure_ascii=False, indent=1)
+        json.dump({"regra": "github-profile/tools/contar_entregas.py", "unidades": "pr; lote = commits diretos do mesmo "
+                   "repo, dia e categoria; card = lote da central", "serie_mensal": {m: dict(serie[m]) for m in sorted(serie)},
+                   "prs": por_pr}, sys.stdout, ensure_ascii=False, indent=1)
         return
-    cat = collections.Counter(c for _, c, _ in res)
-    det = collections.Counter((c, d) for _, c, d in res)
-    print(f"PRs juntados em {a.ano}: {len(prs)}")
-    for c in ("conversa", "agente", "pedido", "conserto", "manutencao", "dados", "fora", "sem"):
-        partes = ", ".join(f"{d or '-'} {n}" for (cc, d), n in det.most_common() if cc == c)
-        print(f"  {c:11} {cat[c]:5}  ({partes})" if cat[c] else f"  {c:11} {0:5}")
-    print(f"  dirigidas por mim (conversa + agente): {cat['conversa'] + cat['agente']}")
+    anos = sorted({m[:4] for m in serie})
+    total = lambda filtro, c: sum(v[c] for m, v in serie.items() if filtro(m))   # noqa: E731
+    print("categoria   " + "".join(f"{x:>8}" for x in anos) + "  início   (PRs / lotes / cards)")
+    for c in ORDEM:
+        print(f"{c:11} " + "".join(f"{total(lambda m, y=y: m.startswith(y), c):8}" for y in anos)
+              + f"{total(lambda m: True, c):8}   ({unid[(c, 'pr')]} / {unid[(c, 'lote')]} / {unid[(c, 'card')]})")
+    print("dirigidas   " + "".join(f"{sum(total(lambda m, y=y: m.startswith(y), c) for c in DIRIGIDAS):8}" for y in anos)
+          + f"{sum(total(lambda m: True, c) for c in DIRIGIDAS):8}")
+    print("\nmês      " + "".join(f"{c[:8]:>9}" for c in ORDEM))
+    for m in sorted(serie):
+        print(f"{m}  " + "".join(f"{serie[m][c]:9}" for c in ORDEM))
 
 
 if __name__ == "__main__":
