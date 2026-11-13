@@ -16,19 +16,22 @@ sem depender de intermediários.
 trabalho, pela API do GitHub e pelo git, com a conta de lá; cada entrega classificada pela origem (regra no topo de
 tools/contar_entregas.py). Entrega = PR juntado; antes de o trabalho entrar por PR (até setembro), um lote de
 commits diretos do mesmo repositório, dia e tipo, ou um card do meu quadro de demandas. "Dirigi" = conversa aberta
-com agentes, executor que meu quadro abriu sozinho, ou agente no GitHub a partir de uma issue minha. "Consertos" =
+com agentes ("em conversa"), ou agente sem mim na conversa a partir de uma demanda minha ("agentes autônomos":
+executor que meu quadro de demandas abriu sozinho, ou agente no GitHub a partir de uma issue minha). "Consertos" =
 a origem é um erro, alerta ou falha repetida que virou issue sem ninguém pedir. "Rotinas" = dependências,
 changelog e dados. Repositórios de ensaio e de anotações ficam fora. Recontar:
 python tools/contar_entregas.py <org> --autores <contas> --emails <emails> --agentes <app> --excluir <repos> -->
 **Desde que comecei, em junho de 2026, em sistemas internos de um grupo de varejo** (repositórios privados):
 
-- **1.462 entregas que eu dirigi**
+- **1.462 entregas que eu dirigi:** 698 em conversa com agentes de IA e 764 por agentes autônomos a partir das
+  minhas demandas
 - **104 consertos que os agentes fizeram sozinhos**, a partir de erros, alertas e falhas repetidas
 - **362 rotinas automáticas:** dependências, changelog e dados
 
 | 2026 | jun | jul | ago | set | out | nov |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dirigidas | 35 | 58 | 64 | 152 | 689 | 464 |
+| em conversa | 35 | 58 | 55 | 41 | 152 | 357 |
+| agentes autônomos | – | – | 9 | 111 | 537 | 107 |
 | consertos sozinhos | – | – | – | – | 53 | 51 |
 | rotinas | 1 | 23 | 21 | 7 | 124 | 186 |
 
