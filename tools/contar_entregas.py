@@ -193,11 +193,14 @@ def lotes_diretos(org, repos, a):
             r = rodar(["git", "clone", "-q", "--bare", "--filter=blob:none", f"https://github.com/{org}/{repo}.git", d])
             if r.returncode != 0:
                 sys.exit(f"git clone de {repo} falhou: {r.stderr.strip()[:200]}")
-            r = rodar(["git", "-C", d, "log", "HEAD", "--first-parent", "--no-merges", "--date=format-local:%Y-%m-%d",
-                       f"--format=%ae{sep}%ce{sep}%ad{sep}%s{sep}%b%x1e"], env=dict(os.environ, TZ="America/Sao_Paulo"))
+            # %at (instante) e o dia em Brasília calculado aqui: o TZ do git varia com a máquina (no Windows, Londres)
+            r = rodar(["git", "-C", d, "log", "HEAD", "--first-parent", "--no-merges",
+                       f"--format=%ae{sep}%ce{sep}%at{sep}%s{sep}%b%x1e"])
             for reg in r.stdout.split("\x1e"):
                 campos = (reg.strip("\n").split(sep) + [""] * 5)[:5]
-                ae, ce, dia, assunto, corpo = campos[0].lower(), campos[1].lower(), campos[2], campos[3], campos[4]
+                ae, ce, instante, assunto, corpo = campos[0].lower(), campos[1].lower(), campos[2], campos[3], campos[4]
+                dia = datetime.datetime.fromtimestamp(int(instante), FUSO).strftime("%Y-%m-%d") \
+                    if instante.isdigit() else ""
                 if not dia or ce == "noreply@github.com" or repo.lower() in a.excluir:
                     continue   # vazio, PR juntado pelo GitHub (já contado) ou repo fora
                 if "[bot]" in ae + ce or ae.endswith("@users.noreply.github.com"):

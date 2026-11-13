@@ -22,15 +22,15 @@ changelog e dados. Repositórios de ensaio e de anotações ficam fora. Recontar
 python tools/contar_entregas.py <org> --autores <contas> --emails <emails> --agentes <app> --excluir <repos> -->
 **Desde que comecei, em junho de 2026, em sistemas internos de um grupo de varejo** (repositórios privados):
 
-- **1.453 entregas que eu dirigi**
+- **1.462 entregas que eu dirigi**
 - **104 consertos que os agentes fizeram sozinhos**, a partir de erros, alertas e falhas repetidas
-- **360 rotinas automáticas:** dependências, changelog e dados
+- **362 rotinas automáticas:** dependências, changelog e dados
 
 | 2026 | jun | jul | ago | set | out | nov |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dirigidas | 36 | 62 | 63 | 152 | 687 | 453 |
+| dirigidas | 35 | 58 | 64 | 152 | 689 | 464 |
 | consertos sozinhos | – | – | – | – | 53 | 51 |
-| rotinas | 1 | 21 | 21 | 7 | 124 | 186 |
+| rotinas | 1 | 23 | 21 | 7 | 124 | 186 |
 
 <sub>Até setembro, lotes de commits diretos; de outubro em diante, PRs (a unidade ficou menor, por isso o salto).</sub>
 
