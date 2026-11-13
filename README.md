@@ -12,6 +12,13 @@ Dado sem decisão é ruído. Construo pipelines, dashboards e automações
 que encurtam a distância entre o dado bruto e a ação estratégica —
 sem depender de intermediários.
 
+<!-- Números de entrega, contados à mão em 12/11/2026: PRs juntados (merged) de 01/01/2026 até essa data em todos
+os repositórios privados da organização onde trabalho, pela API de busca do GitHub com a conta de lá. Ficam fora os
+PRs abertos por robô (user.type = Bot: dependências, agente automático, rotinas de dados) e os de repositório de
+ensaio; só contam os PRs abertos pelas minhas contas. Recontar:
+python tools/contar_entregas.py <org> 2026 --excluir <repos-de-ensaio> --autores <minhas-contas> -->
+**Em 2026:** 484 entregas no ar em sistemas internos de um grupo de varejo (repositórios privados).
+
 ```python
 skills = {
     "dados":   ["Python", "SQL", "DuckDB", "Power BI", "DAX", "Pandas"],
