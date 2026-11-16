@@ -2,15 +2,15 @@
 
 ## Gabriel dos Anjos
 
-**Analista de Dados · Produto**
+**Analista de Dados de Produto · Product Analytics**
 
 </div>
 
 ---
 
-Dado sem decisão é ruído. Construo pipelines, dashboards e automações
-que encurtam a distância entre o dado bruto e a ação estratégica —
-sem depender de intermediários.
+Sou analista de dados na área de Produto. Construo e opero sistemas com agentes de IA:
+especifico o que precisa ser feito, reviso, testo e acompanho em produção.
+Antes de dar uma entrega por pronta, confiro o resultado contra o dado real.
 
 <!-- Números de entrega, contados à mão em 13/11/2026 em todos os repositórios privados da organização onde
 trabalho, pela API do GitHub e pelo git, com a conta de lá; cada entrega classificada pela origem (regra no topo de
@@ -35,22 +35,22 @@ python tools/contar_entregas.py <org> --autores <contas> --emails <emails> --age
 
 <sub>Até setembro, lotes de commits diretos; de outubro em diante, PRs (a unidade ficou menor, por isso o salto).</sub>
 
-```python
-skills = {
-    "dados":   ["Python", "SQL", "DuckDB", "Power BI", "DAX", "Pandas"],
-    "produto": ["Discovery", "OKRs", "Impact × Effort", "Analytics"],
-    "dev":     ["React", "Node.js", "GitHub Actions", "PowerShell", "Playwright", "Tauri", "Whisper"],
-}
-```
+**Onde atuo**
+
+- **Produto:** discovery, requisitos e critérios de aceitação, priorização por impacto, métricas de decisão
+- **Dados:** varejo de moda (ruptura, cobertura, giro, GMROI), modelagem e qualidade de dados, validação contra a fonte
+- **IA aplicada:** orquestração de agentes (Claude Code), revisão e testes automáticos
 
 ---
 
 **Projetos em destaque**
 
-- 🌊 [`fluid-cursor-trail`](https://github.com/dosxnjos/fluid-cursor-trail) — rastro de cursor com simulação de fluido WebGL, bancadas de calibração ao vivo
-- 🎙️ [`reco`](https://github.com/dosxnjos/reco) — gravador Windows (mic + áudio do sistema) com transcrição 100% local
-- 📊 [`claude-usage-tray`](https://github.com/dosxnjos/claude-usage-tray) — bandeja do Windows com uso das contas Claude no hover
-- 🎭 [`playwright`](https://github.com/dosxnjos/playwright) (fork) — extensão Chrome com múltiplas conexões MCP simultâneas
+- ✅ **Contribuição aceita no Playwright (Microsoft):** duas correções dirigidas com agentes de IA e revisadas por mim, aceitas no projeto oficial em outubro de 2026 ([#43037](https://github.com/microsoft/playwright/pull/43037) e [#43051](https://github.com/microsoft/playwright/pull/43051))
+- 🚌 [**Busão**](https://busao.pages.dev): app de ônibus da Grande Florianópolis que junta as linhas da capital e das 7 operadoras metropolitanas num mapa só, com horário ao vivo
+- 🎙️ [`reco`](https://github.com/dosxnjos/reco): gravador para Windows (microfone e áudio do sistema) com transcrição 100% local
+- 🎭 [`playwright`](https://github.com/dosxnjos/playwright) (fork): extensão do Chrome com várias conexões MCP ao mesmo tempo
+- 🌊 [`fluid-cursor-trail`](https://github.com/dosxnjos/fluid-cursor-trail): rastro de cursor com simulação de fluido e bancadas de calibração ao vivo
+- 📊 [`claude-usage-tray`](https://github.com/dosxnjos/claude-usage-tray): ícone na bandeja do Windows que mostra o uso das contas Claude ao passar o mouse
 
 ---
 
